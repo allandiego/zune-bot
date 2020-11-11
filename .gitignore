@@ -1,2 +1,7 @@
-#/*.env
-node_modules/
+node_modules
+tmp/*
+tests_coverage
+*.log
+!tmp/.gitkeep
+.env
+dist

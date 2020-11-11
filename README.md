@@ -1,19 +1,77 @@
-# CREATE BOT APP ID/SECRET
-  https://discordapp.com/developers
+# HOW TO SETUP YOUR BOT
 
-# ADD BOT TO SERVER
-example url to add bot to the server (change to your client_id)
-  https://discordapp.com/oauth2/authorize?client_id=322697570197438464&scope=bot&permissions=85120
+  ## CREATE BOT APP CLIENT_ID and TOKEN
+    https://discordapp.com/developers
 
-# BOT SECRET LOGIN
-create file in /src/.env with secret key from 
-https://discordapp.com/developers/applications/
+  ## CREATE .env file based on .env.example placing you token
 
-```
-CLIENT_SECRET=
-```
+  ## RUN NODE BOT SERVER
+    ```sh
+    npm install
+    npm run build
+    npm run start
+    ```
 
-# RUN SERVER
-```
-npm start
+  ## ADD BOT TO YOUR DISCORD SERVER
+    Example url to add bot to the server
+
+    https://discord.com/oauth2/authorize?client_id=INSERT_YOUR_BOT_CLIENT_ID&scope=bot&permissions=INSERT_PERMISSIONS
+    get client_id from https://discord.com/developers/applications
+    get permissions from https://discordapi.com/permissions.html
+
+
+# REFERENCES
+https://discordjs.guide/
+https://github.com/discordjs/guide/tree/master/code-samples
+
+
+# EMBED MESSAGE EXAMPLE
+```ts
+const avatarEmbed = new MessageEmbed()
+        .setColor('#0099ff')
+        .setTitle(`${message.author.tag} Avatar's`)
+        .setURL('https://discord.js.org/')
+        .setAuthor(
+          process.env.DISCORD_BOT_NAME ?? '',
+          process.env.DISCORD_BOT_AVATAR_URL,
+          // 'https://discord.js.org',
+        )
+        .setDescription('Some description here')
+        .setThumbnail(message.author.displayAvatarURL())
+        .addFields(
+          {
+            name: 'Links',
+            value: `[PNG](${message.author.displayAvatarURL({
+              format: 'png',
+              size: 1024,
+            })}) | [JPG](${message.author.displayAvatarURL({
+              format: 'jpg',
+              size: 1024,
+            })}) | [GIF](${message.author.displayAvatarURL({
+              format: 'gif',
+              size: 1024,
+            })}) | [WEBP](${message.author.displayAvatarURL({
+              format: 'webp',
+              size: 1024,
+            })})`,
+          },
+          { name: '\u200B', value: '\u200B' },
+          {
+            name: 'Inline field title',
+            value: 'Some value here',
+            inline: true,
+          },
+          {
+            name: 'Inline field title',
+            value: 'Some value here',
+            inline: true,
+          },
+        )
+        .addField('\u200b', '\u200b')
+        .addField('Inline field title', 'Some value here', true)
+        .setImage(
+          message.author.displayAvatarURL({ format: 'png', size: 512 }),
+        )
+      .setFooter('Some footer text here', 'https://i.imgur.com/wSTFkRM.png')
+      .setTimestamp();
 ```
