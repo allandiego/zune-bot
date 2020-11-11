@@ -6,11 +6,11 @@
   ## CREATE .env file based on .env.example placing you token
 
   ## RUN NODE BOT SERVER
-    ```sh
-    npm install
-    npm run build
-    npm run start
-    ```
+```bash
+npm install
+npm run build
+npm run start
+```
 
   ## ADD BOT TO YOUR DISCORD SERVER
     Example url to add bot to the server
