@@ -1,6 +1,5 @@
-/* eslint-disable consistent-return */
 import { MessageEmbed, User as DiscordUser } from 'discord.js';
-import { IDiscordCommand } from './types';
+import { IDiscordCommand } from '../types';
 
 const command: IDiscordCommand = {
   name: 'avatar',
@@ -33,7 +32,8 @@ const command: IDiscordCommand = {
     }
 
     if (!message.mentions.users.size) {
-      return message.channel.send(generateEmbedAvatar(message.author));
+      message.channel.send(generateEmbedAvatar(message.author));
+      return;
     }
 
     message.mentions.users.map(user =>

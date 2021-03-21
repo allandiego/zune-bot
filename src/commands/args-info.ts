@@ -1,10 +1,9 @@
-/* eslint-disable consistent-return */
-
-import { IDiscordCommand } from './types';
+import { IDiscordCommand } from '../types';
 
 const command: IDiscordCommand = {
   name: 'args-info',
   description: 'Information about the arguments provided.',
+  aliases: ['args'],
   isArgumentsRequired: true,
   usage: '<user> <role>',
   execute(message, args) {
@@ -17,7 +16,7 @@ const command: IDiscordCommand = {
       return message.channel.send('bar');
     }
 
-    message.channel.send(`First argument: ${args[0]}`);
+    return message.channel.send(`Arguments: ${args.join(', ')}`);
   },
 };
 

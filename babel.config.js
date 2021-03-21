@@ -8,7 +8,10 @@ module.exports = {
     ['module-resolver', {
       alias: {
         '@config': './src/config',
-        '@commands': './src/commands'
+        '@commands': './src/commands',
+        '@events': './src/events',
+        '@services': './src/services',
+        '@database': './src/database',
       }
     }],
     'babel-plugin-transform-typescript-metadata',

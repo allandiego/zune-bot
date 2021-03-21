@@ -1,6 +1,4 @@
-/* eslint-disable consistent-return */
-
-import { IDiscordCommand } from './types';
+import { IDiscordCommand } from '../types';
 
 const command: IDiscordCommand = {
   name: 'kick',
@@ -13,7 +11,7 @@ const command: IDiscordCommand = {
 
     const taggedUser = message.mentions.users.first();
 
-    message.channel.send(`You wanted to kick: ${taggedUser?.username}`);
+    return message.channel.send(`You wanted to kick: ${taggedUser?.username}`);
   },
 };
 

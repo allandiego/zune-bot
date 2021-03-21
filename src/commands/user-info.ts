@@ -1,4 +1,4 @@
-import { IDiscordCommand } from './types';
+import { IDiscordCommand } from '../types';
 
 const command: IDiscordCommand = {
   name: 'user-info',

@@ -1,1 +1,1 @@
-export const commandPrefix = '!';
+export const commandPrefix = '~';

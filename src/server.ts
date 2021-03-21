@@ -1,105 +1,74 @@
-/* eslint-disable consistent-return */
-
 import '@config/env';
-import Discord, { Message as DiscordMessage } from 'discord.js';
+import Discord from 'discord.js';
+import mongoose from 'mongoose';
 
-import { IDiscordClientWithCommands } from '@commands/types';
-import { commandPrefix } from '@config/command';
-import commands from './commands';
+// import './database';
+import { IDiscordClientEnhanced } from './types';
+import { Logger } from './util';
+import { commands } from './commands';
+import { events } from './events';
 
-const client: IDiscordClientWithCommands = new Discord.Client();
+const client: IDiscordClientEnhanced = new Discord.Client({
+  disableMentions: 'none',
+});
 
 client.commands = new Discord.Collection();
-client.login(process.env.DISCORD_TOKEN);
+client.events = new Discord.Collection();
+client.cooldowns = new Discord.Collection();
+client.logger = Logger;
 
-commands.forEach(command => client.commands?.set(command.name, command));
-
-// cooldowns<commandName, <authorId, cooldownAmount>
-const cooldowns = new Discord.Collection<
-  string,
-  Discord.Collection<string, number>
->();
-
-const onReady = () => {
-  client.user?.setUsername(process.env.DISCORD_BOT_NAME);
-  client.user?.setStatus('online');
-
-  client.user?.setPresence({
-    afk: false,
-    activity: {
-      name: '!help',
-      type: 'PLAYING',
-      // url: '',
-    },
+async function initMongoDb() {
+  await mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    // enable use of findByIdAndUpdate() without deprecation
+    useFindAndModify: false,
+    // enable use of Schema.index() without deprecation
+    useCreateIndex: true,
   });
+}
 
-  console.log('Discord Bot Ready! 🚀');
-};
+function setCommands() {
+  commands.forEach(command => {
+    client.logger.load(`Command => ${command.name}`);
 
-const onMessage = (message: DiscordMessage) => {
-  console.log(message.content);
-  // if (msg.guild.id === serverID && msg.channel.id === channelID) {}
-  if (!message.content.trim().startsWith(commandPrefix) || message.author.bot)
-    return;
+    client.commands?.set(command.name, command);
+  });
+}
 
-  const args = message.content.slice(commandPrefix.length).split(/ +/);
-  const commandName = args.shift()?.toLowerCase() || '';
+function setEvents() {
+  events.forEach(event => {
+    client.logger.load(`Event => ${event.name}`);
 
-  const command =
-    client.commands?.get(commandName) ??
-    client.commands?.find(cmd => cmd.aliases?.includes(commandName) ?? false);
-
-  if (!command) return;
-
-  // specific roles msg only
-  if (command.guildOnly && message.channel.type !== 'text') {
-    return message.reply(
-      'Comandos não podem ser executados em mensagens privadas!',
-    );
-  }
-
-  if (command.isArgumentsRequired && !args.length) {
-    let reply = `Você não enviou nenhum parâmetro, ${message.author}!`;
-
-    if (command.usage) {
-      reply += `\nUso correto: ${commandPrefix}${command.name} ${command.usage}`;
+    if (event.once) {
+      client.once(event.name, (...args) => event.execute(client, ...args));
+    } else {
+      client.on(event.name, (...args) => event.execute(client, ...args));
     }
-    return message.channel.send(reply);
-  }
+  });
+}
 
-  // command delay
-  if (!cooldowns.has(command.name)) {
-    cooldowns.set(command.name, new Discord.Collection());
-  }
+async function startUp() {
+  initMongoDb();
+  setCommands();
+  setEvents();
 
-  const now = Date.now();
-  const timestamps = cooldowns.get(command.name);
-  const cooldownAmount = (command.cooldown || 3) * 1000;
+  // client.on('disconnect', message => {
+  //   console.log(
+  //     `${message.author.tag} in #${message.channel.name} sent: ${message.content}`,
+  //   );
+  // });
 
-  if (timestamps?.has(message.author.id)) {
-    const expirationTime =
-      (timestamps.get(message.author.id) ?? 0) + cooldownAmount;
+  client.login(process.env.DISCORD_TOKEN);
+}
 
-    if (now < expirationTime) {
-      const timeLeft = (expirationTime - now) / 1000;
-      return message.reply(
-        `por favor espere ${timeLeft.toFixed(
-          1,
-        )} segundo(s) antes de reusar o comando \`${command.name}\``,
-      );
-    }
-  }
+startUp();
 
-  timestamps?.set(message.author.id, now);
-  setTimeout(() => timestamps?.delete(message.author.id), cooldownAmount);
+// HANDLE ERRORS
+client.on('error', error => client.logger.error(error));
+client.on('warn', info => client.logger.warn(info));
 
-  try {
-    command.execute(message, args);
-  } catch (error) {
-    console.error(error);
-    message.reply('Erro ao tentar executar o comando 💣💣!');
-  }
-};
-
-client.once('ready', onReady);
-client.on('message', onMessage);
+// For any unhandled errors
+process.on('unhandledRejection', error => {
+  console.error(error);
+});

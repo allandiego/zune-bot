@@ -12,7 +12,10 @@
     "baseUrl": "./src",
     "paths": {
       "@config/*": ["config/*"],
-      "@commands/*": ["commands/*"]
+      "@commands/*": ["commands/*"],
+      "@events/*": ["events/*"],
+      "@services/*": ["services/*"],
+      "@database/*": ["database/*"],
     },
     "typeRoots": [
       "./src/@types",
