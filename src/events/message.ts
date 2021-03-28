@@ -7,9 +7,11 @@ const messageEvent: IDiscordMessageEvent = {
   name: 'message',
   once: false,
   execute: async (_, message) => {
+    const { client } = message;
+
     try {
-      const { client } = message;
-      client.logger?.cmd(
+      client.logger?.log(
+        'http',
         `${message.author.tag} in #${message.channel.name} sent: ${message.content}`,
       );
 
@@ -38,25 +40,7 @@ const messageEvent: IDiscordMessageEvent = {
         return;
       }
 
-      // commands that can only be used in normal text channel
-      if (command.guildOnly && message.channel.type !== 'text') {
-        message.reply(
-          'Esse comando só pode ser utilizado em cannal de texto, não podem ser executado em mensagem privada!',
-        );
-        return;
-      }
-
-      // commands that require certain permissions
-      if (command.userPermission && message.channel.type !== 'dm') {
-        const authorPerms = message.channel.permissionsFor(message.author);
-
-        if (!authorPerms || !authorPerms.has(command.userPermission)) {
-          // member.hasPermission(['KICK_MEMBERS', 'BAN_MEMBERS'])
-          message.reply('Você não tem permissão para executar esse comando');
-          return;
-        }
-      }
-
+      // check for args requirements
       if (command.isArgumentsRequired && !args.length) {
         let reply = `${message.author} este comando requer parâmetros!`;
 
@@ -66,6 +50,53 @@ const messageEvent: IDiscordMessageEvent = {
 
         message.channel.send(reply);
         return;
+      }
+
+      // commands that can only be used in normal text channel
+      if (command.guildOnly && message.channel.type !== 'text') {
+        message.reply(
+          'Esse comando só pode ser utilizado em cannal de texto, não podem ser executado em mensagem privada!',
+        );
+        return;
+      }
+
+      // commands that require certain discord permissions
+      if (command.requiredPermissions && message.channel.type !== 'dm') {
+        const authorPermissions = message.channel.permissionsFor(
+          message.author,
+        );
+
+        if (
+          !authorPermissions ||
+          !authorPermissions.has(command.requiredPermissions)
+        ) {
+          // member.hasPermission(['KICK_MEMBERS', 'BAN_MEMBERS'])
+          message.reply('Você não tem permissão para executar esse comando');
+          return;
+        }
+      }
+
+      // commands that require certain roles
+      if (command.requiredRoles) {
+        const { requiredRoles: commandUserRoles } = command;
+
+        // const hasRole =
+        //   message.guild?.members.cache
+        //     .find(member => member.id === message.author.id)
+        //     ?.roles.cache.some(role => userRoles.includes(role.name)) ?? false;
+
+        const hasRole = message.member?.roles.cache.some(role =>
+          commandUserRoles.includes(role.name),
+        );
+
+        if (!hasRole) {
+          message.reply(
+            `Você não tem as roles necessárias para executar esse comando \`${commandUserRoles.join(
+              ', ',
+            )}\``,
+          );
+          return;
+        }
       }
 
       // command delay
@@ -110,11 +141,16 @@ const messageEvent: IDiscordMessageEvent = {
         command.execute(message, args);
         // command.execute(client, message, args, data);
       } catch (error) {
-        console.error(error);
+        client.logger?.log(
+          'error',
+          `Erro ao tentar executar o comando ${message.content}`,
+          error,
+        );
+
         message.reply('Erro ao tentar executar o comando 💣💣!');
       }
     } catch (error) {
-      console.log(error);
+      client.logger?.log('error', 'Erro no evento message', error);
     }
   },
 };

@@ -4,9 +4,9 @@ const reconnectingEvent: IDiscordEventWithClient = {
   name: 'reconnecting',
   execute: async client => {
     try {
-      client.logger.log(`Bot (${client.user?.tag}) reconnecting...`);
+      client.logger?.log('info', `Bot (${client.user?.tag}) reconnecting...`);
     } catch (error) {
-      console.log(error);
+      client.logger?.log('error', 'Erro ao reconectar o bot', error);
     }
   },
 };

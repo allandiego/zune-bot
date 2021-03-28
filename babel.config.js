@@ -11,6 +11,7 @@ module.exports = {
         '@commands': './src/commands',
         '@events': './src/events',
         '@services': './src/services',
+        '@model': './src/model',
         '@database': './src/database',
       }
     }],

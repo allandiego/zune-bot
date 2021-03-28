@@ -3,6 +3,7 @@ import { IDiscordCommand } from '../types';
 const command: IDiscordCommand = {
   name: 'prune',
   description: 'Prune up to 100 messages.',
+  requiredPermissions: ['ADMINISTRATOR'],
   async execute(message, args) {
     if (message.channel.type === 'dm') return;
 

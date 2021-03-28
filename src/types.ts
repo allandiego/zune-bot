@@ -4,6 +4,8 @@ import {
   Collection as DiscordColletion,
 } from 'discord.js';
 
+import { ILog } from './util/Log/ILog';
+
 interface DiscordMessageWithDiscordClientEnhanced extends DiscordMessage {
   client: IDiscordClientEnhanced;
 }
@@ -49,7 +51,8 @@ export interface IDiscordCommand {
   aliases?: string[];
   usage?: string;
   isArgumentsRequired?: boolean;
-  userPermission?: DiscordPermissionString;
+  requiredPermissions?: DiscordPermissionString[];
+  requiredRoles?: string[];
   execute(
     message: DiscordMessageWithDiscordClientEnhanced,
     commandArgs?: any[],
@@ -82,5 +85,5 @@ export interface IDiscordClientEnhanced extends DiscordClient {
   >;
   cooldowns?: DiscordColletion<string, DiscordColletion<string, number>>;
   data?: any;
-  logger?: any;
+  logger?: ILog;
 }

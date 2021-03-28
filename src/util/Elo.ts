@@ -52,7 +52,7 @@ export default class ELO {
    * @arg {Number} rating A players rating, e.g. 1200
    * @return {Number} The determined K-factor, e.g. 32
    */
-  getKFactor(rating = 0) {
+  getKFactor(rating = 0): number {
     let k_factor = 0;
 
     if (typeof this.k_factor === 'number') {
@@ -119,7 +119,7 @@ export default class ELO {
    * @arg {Number} minimum The minimum acceptable rating, e.g. 100
    * @return {Object} The current object for chaining purposes
    */
-  setMin(minimum: number) {
+  setMin(minimum: number): this {
     this.minimum = minimum;
 
     return this;
@@ -131,7 +131,7 @@ export default class ELO {
    * @arg {Number} maximum The maximum acceptable rating, e.g. 2700
    * @return {Object} The current object for chaining purposes
    */
-  setMax(maximum: number) {
+  setMax(maximum: number): this {
     this.maximum = maximum;
 
     return this;
@@ -146,7 +146,7 @@ export default class ELO {
    *
    * @link http://en.wikipedia.org/wiki/Elo_rating_system#Mathematical_details
    */
-  expectedScore(rating: number, opponent_rating: number) {
+  expectedScore(rating: number, opponent_rating: number): number {
     const difference = opponent_rating - rating;
 
     return 1 / (1 + 10 ** (difference / this.PERF));
@@ -159,7 +159,10 @@ export default class ELO {
    * @param {Number} player_2_rating The rating of player 2, e.g. 1200
    * @return {Array} The anticipated scores, e.g. [0.25, 0.75]
    */
-  bothExpectedScores(player_1_rating: number, player_2_rating: number) {
+  bothExpectedScores(
+    player_1_rating: number,
+    player_2_rating: number,
+  ): number[] {
     return [
       this.expectedScore(player_1_rating, player_2_rating),
       this.expectedScore(player_2_rating, player_1_rating),
@@ -174,7 +177,11 @@ export default class ELO {
    * @param {Number} previous_rating The previous rating of the player, e.g. 1200
    * @return {Number} The new rating of the player, e.g. 1256
    */
-  newRating(expected_score: number, actual_score, previous_rating: number) {
+  newRating(
+    expected_score: number,
+    actual_score: number,
+    previous_rating: number,
+  ): number {
     const difference = actual_score - expected_score;
     let rating = Math.round(
       previous_rating + this.getKFactor(previous_rating) * difference,
@@ -198,7 +205,7 @@ export default class ELO {
    * @param {Number} opponent_rating The rating of the opponent, e.g. 1300
    * @return {Number} The new rating of the player, e.g. 1300
    */
-  newRatingIfWon(rating: number, opponent_rating: number) {
+  newRatingIfWon(rating: number, opponent_rating: number): number {
     const odds = this.expectedScore(rating, opponent_rating);
 
     return this.newRating(odds, this.OUTCOME_WON, rating);
@@ -213,7 +220,7 @@ export default class ELO {
    * @param {Number} opponent_rating The rating of the opponent, e.g. 1300
    * @return {Number} The new rating of the player, e.g. 1180
    */
-  newRatingIfLost(rating: number, opponent_rating: number) {
+  newRatingIfLost(rating: number, opponent_rating: number): number {
     const odds = this.expectedScore(rating, opponent_rating);
 
     return this.newRating(odds, this.OUTCOME_LOST, rating);
@@ -228,7 +235,7 @@ export default class ELO {
    * @param {Number} opponent_rating The rating of the opponent, e.g. 1300
    * @return {Number} The new rating of the player, e.g. 1190
    */
-  newRatingIfTied(rating: number, opponent_rating: number) {
+  newRatingIfTied(rating: number, opponent_rating: number): number {
     const odds = this.expectedScore(rating, opponent_rating);
 
     return this.newRating(odds, this.OUTCOME_TIED, rating);

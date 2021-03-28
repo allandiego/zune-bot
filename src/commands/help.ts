@@ -36,7 +36,8 @@ const command: IDiscordCommand = {
         // if (message.channel.type === 'dm') return;
         // message.reply("I've sent you a DM with all my commands!");
       } catch (error) {
-        client.logger.error(
+        client.logger?.log(
+          'error',
           `Could not send help DM to ${message.author.tag}.\n`,
           error,
         );
@@ -68,6 +69,16 @@ const command: IDiscordCommand = {
         );
 
       data.push(`**Cooldown:** ${commandHelp?.cooldown || 3} second(s)`);
+
+      if (commandHelp?.requiredPermissions) {
+        data.push(
+          `**Permissions:** \`${commandHelp?.requiredPermissions.join(', ')}\``,
+        );
+      }
+
+      if (commandHelp?.requiredRoles) {
+        data.push(`**Roles:** ${commandHelp?.requiredRoles.join(', ')}`);
+      }
 
       message.channel.send(data, { split: true });
     }

@@ -1,5 +1,5 @@
 import { Match } from '@database/schemas';
-import { IMatch } from './types';
+import { IMatch } from '@model/matchmaking/MatchModel';
 
 // type IRequest = Partial<IMatch>;
 type IRequest = IMatch;
@@ -9,12 +9,11 @@ export default class UpdateMatchService {
     const updatedMatch = await Match.findByIdAndUpdate(
       match._id,
       {
-        type: match.type,
-        player1Id: match.player1Id,
-        player2Id: match.player2Id,
-        player1Score: match.player1Score,
-        player2Score: match.player2Score,
-        games: match.games,
+        scoreReportPlayerId: match.scoreReportPlayerId,
+        team1ScoreOrder: match.team1ScoreOrder,
+        team2ScoreOrder: match.team2ScoreOrder,
+        team1Wins: match.team1Wins,
+        team2Wins: match.team2Wins,
         isFinished: match.isFinished,
       },
       { new: true }, // return updated record

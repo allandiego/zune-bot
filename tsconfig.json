@@ -15,6 +15,7 @@
       "@commands/*": ["commands/*"],
       "@events/*": ["events/*"],
       "@services/*": ["services/*"],
+      "@model/*": ["model/*"],
       "@database/*": ["database/*"],
     },
     "typeRoots": [

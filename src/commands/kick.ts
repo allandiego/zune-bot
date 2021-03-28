@@ -3,6 +3,7 @@ import { IDiscordCommand } from '../types';
 const command: IDiscordCommand = {
   name: 'kick',
   description: 'Tag a member and kick them (but not really).',
+  requiredPermissions: ['KICK_MEMBERS'],
   guildOnly: true,
   execute(message) {
     if (!message.mentions.users.size) {

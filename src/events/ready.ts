@@ -1,3 +1,4 @@
+import { commandPrefix } from '@config/command';
 import { IDiscordEventWithClient, IDiscordClientEnhanced } from '../types';
 
 const readyEvent: IDiscordEventWithClient = {
@@ -11,17 +12,18 @@ const readyEvent: IDiscordEventWithClient = {
       client.user?.setPresence({
         afk: false,
         activity: {
-          name: '!help',
+          name: `${commandPrefix}help`,
           type: 'PLAYING',
           // url: '',
         },
       });
 
-      client.logger.ready(
+      client.logger?.log(
+        'info',
         `Bot (${client.user?.tag}) is now up and running! 🚀`,
       );
     } catch (error) {
-      console.log(error);
+      client.logger?.log('error', 'Erro ao iniciar o bot', error);
     }
   },
 };

@@ -1,30 +1,27 @@
 import { model, Schema, Model, Document } from 'mongoose';
 
-import { gameType } from '@services/matchmaking/types';
+import { MatchType } from '@model/matchmaking/MatchModel';
+import { matchTypeList } from '@config/match';
 
 export interface IScore extends Document {
   _id: string;
-  type: gameType;
+  matchType: MatchType;
   playerId: string;
   playerUsername: string;
   wins: number;
   losses: number;
   gamesPlayed: number;
   eloRating: number;
+  eloName: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const ScoreSchema: Schema = new Schema(
   {
-    type: {
+    matchType: {
       type: String,
-      enum: [
-        'switch-singles',
-        'switch-doubles',
-        'yuzu-singles',
-        'yuzu-doubles',
-      ],
+      enum: matchTypeList,
       required: true,
     },
     playerId: {
@@ -55,11 +52,16 @@ const ScoreSchema: Schema = new Schema(
       required: true,
       default: 799,
     },
+    eloName: {
+      type: String,
+      required: true,
+      default: '',
+    },
   },
   { timestamps: true },
 );
 
-ScoreSchema.index({ type: 1, playerId: 1 }, { unique: true });
+ScoreSchema.index({ matchType: 1, playerId: 1 }, { unique: true });
 
 const Score: Model<IScore> = model('Score', ScoreSchema);
 

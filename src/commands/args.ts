@@ -1,22 +1,19 @@
 import { IDiscordCommand } from '../types';
 
 const command: IDiscordCommand = {
-  name: 'args-info',
+  name: 'args',
   description: 'Information about the arguments provided.',
-  aliases: ['args'],
+  aliases: ['args-info'],
   isArgumentsRequired: true,
-  usage: '<user> <role>',
+  usage: '<any arg1> <any arg1> ...',
   execute(message, args) {
     if (!args?.length) {
       return message.channel.send(
         `You didn't provide any arguments, ${message.author}!`,
       );
     }
-    if (args[0] === 'foo') {
-      return message.channel.send('bar');
-    }
 
-    return message.channel.send(`Arguments: ${args.join(', ')}`);
+    return message.channel.send(`Arguments: \`${args.join(', ')}\``);
   },
 };
 

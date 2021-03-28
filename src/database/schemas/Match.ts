@@ -1,15 +1,20 @@
 import { model, Schema, Model, Document } from 'mongoose';
 
-import { gameType } from '@services/matchmaking/types';
+import { MatchType } from '@model/matchmaking/MatchModel';
+import { matchTypeList } from '@config/match';
 
 interface IMatch extends Document {
   _id: string;
-  type: gameType;
-  player1Id: string;
-  player2Id: string;
-  games: number;
-  player1Score: number;
-  player2Score: number;
+  matchType: MatchType;
+  numberOfMatches: number;
+  hostPlayerId: string;
+  team1Players: string[];
+  team2Players: string[];
+  scoreReportPlayerId: string;
+  team1ScoreOrder: string;
+  team2ScoreOrder: string;
+  team1Wins: number;
+  team2Wins: number;
   isFinished: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -17,34 +22,48 @@ interface IMatch extends Document {
 
 const MatchSchema: Schema = new Schema(
   {
-    type: {
+    matchType: {
       type: String,
-      enum: [
-        'switch-singles',
-        'switch-doubles',
-        'yuzu-singles',
-        'yuzu-doubles',
-      ],
+      enum: matchTypeList,
       required: true,
     },
-    player1Id: {
-      type: String,
-      required: true,
-    },
-    player2Id: {
-      type: String,
-      required: true,
-    },
-    games: {
+    numberOfMatches: {
       type: Number,
       required: true,
     },
-    player1Score: {
+    hostPlayerId: {
+      type: String,
+      required: true,
+    },
+    team1Players: {
+      type: [String],
+      required: true,
+    },
+    team2Players: {
+      type: [String],
+      required: true,
+    },
+    scoreReportPlayerId: {
+      type: String,
+      required: false,
+      default: '',
+    },
+    team1ScoreOrder: {
+      type: String,
+      required: false,
+      default: '',
+    },
+    team2ScoreOrder: {
+      type: String,
+      required: false,
+      default: '',
+    },
+    team1Wins: {
       type: Number,
       required: false,
       default: 0,
     },
-    player2Score: {
+    team2Wins: {
       type: Number,
       required: false,
       default: 0,

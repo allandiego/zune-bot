@@ -1,37 +1,49 @@
 import Discord from 'discord.js';
 
 import UpdateMatchScoreService from '@services/matchmaking/score/UpdateMatchScoreService';
-import FindMatchService from '@services/matchmaking/match/FindMatchService';
+import FindUnfinishedMatchService from '@services/matchmaking/match/FindUnfinishedMatchService';
+import { moderatorRoleName } from '@config/match';
 import { IDiscordCommand } from '../../types';
 
-const scoreCommand: IDiscordCommand = {
+const MAX_AWAIT_REACTION_TIME = 10 * 60 * 1000;
+
+const command: IDiscordCommand = {
   name: 'score',
   description: 'Registra os pontos de uma partida criada',
   aliases: ['pontos'],
   cooldown: 5,
   guildOnly: true,
   isArgumentsRequired: true,
-  usage:
-    '<número de jogos ganhos pelo desafiante> <número de jogos ganhos pelo oponente>',
+  usage: `<Sequência de vitórias e derrotas: W para vitória L para derrota>\n exemplo de 5 partidas: WLLWW`,
   async execute(message, args) {
     const { client } = message;
 
-    if (!args?.length || args?.length !== 2) {
-      message.reply('Informe a quantidade de jogos ganhos por cada jogador');
+    if (!args?.length) {
+      // message.reply('Informe a sequência  de vitórias e derrotas');
       return;
     }
 
-    const player1Wins = Number(args[0]);
-    const player2Wins = Number(args[1]);
+    const authorScoreOrder: string = args[0]
+      .toUpperCase()
+      .replace(/[^W|L]/gm, '');
+    const authorResultList = [...authorScoreOrder];
+    const authorWins = authorResultList.reduce((acc, item) => {
+      return acc + (item === 'W' ? 1 : 0);
+    }, 0);
+
+    const opponentScoreOrder = authorResultList
+      .map(item => (item === 'W' ? 'L' : 'W'))
+      .join('');
+    const opponentResultList = [...opponentScoreOrder];
+    const opponentWins = opponentResultList.reduce((acc, item) => {
+      return acc + (item === 'W' ? 1 : 0);
+    }, 0);
 
     // check if author have a valid match to compute points
     try {
-      const findMatchService = new FindMatchService();
-      const unfinishedMatch = await findMatchService.execute({
-        $or: [
-          { player1Id: message.author.id, isFinished: false },
-          { player2Id: message.author.id, isFinished: false },
-        ],
+      const findUnfinishedMatchService = new FindUnfinishedMatchService();
+      const unfinishedMatch = await findUnfinishedMatchService.execute({
+        playerId: message.author.id,
       });
 
       if (!unfinishedMatch) {
@@ -41,43 +53,81 @@ const scoreCommand: IDiscordCommand = {
         return;
       }
 
-      if (unfinishedMatch.games !== player1Wins + player2Wins) {
+      if (unfinishedMatch.numberOfMatches !== authorResultList.length) {
         message.reply(
-          `A quantidade de vitórias não corresponde ao total de jogos registrados na partida (${unfinishedMatch.games})`,
+          `A quantidade reportada não corresponde ao total de partidas registrados na disputa (${unfinishedMatch.numberOfMatches})`,
         );
         return;
       }
 
-      const approvalUserId =
-        message.author.id === unfinishedMatch.player1Id
-          ? unfinishedMatch.player2Id
-          : unfinishedMatch.player1Id;
+      const authorTeamNumber = unfinishedMatch.team1Players.find(
+        playerId => playerId === message.author.id,
+      )
+        ? 1
+        : 2;
+
+      const team1PlayersMention = unfinishedMatch.team1Players
+        .map(playerId => `<@${playerId}>`)
+        .join(' ');
+
+      const team2PlayersMention = unfinishedMatch.team2Players
+        .map(playerId => `<@${playerId}>`)
+        .join(' ');
+
+      const approvalTeamPlayers =
+        authorTeamNumber === 1
+          ? unfinishedMatch.team2Players
+          : unfinishedMatch.team1Players;
+
+      const approvalTeamMention =
+        authorTeamNumber === 1 ? team2PlayersMention : team1PlayersMention;
 
       const scoreCreateMessage = await message.channel.send(
-        `<@${approvalUserId}> o usuário ${message.author.username} está querendo registrar a seguinte pontuação para a partida \`${unfinishedMatch._id}\`:\n<@${unfinishedMatch.player1Id}> = ${player1Wins} vitória(s) | <@${unfinishedMatch.player2Id}> = ${player2Wins} vitória(s), para aceitar utilize reaction 👍 em até 10 minutos`,
+        `${approvalTeamMention} o usuário ${
+          message.author.username
+        } está querendo registrar a seguinte pontuação para a disputa ${
+          unfinishedMatch.matchType
+        } \`${unfinishedMatch._id}\`:\nTime1 - (${
+          authorTeamNumber === 1 ? authorScoreOrder : opponentScoreOrder
+        }):\n ${team1PlayersMention}\nTime2 - (${
+          authorTeamNumber === 2 ? authorScoreOrder : opponentScoreOrder
+        }):\n ${team2PlayersMention}\nUtilize reaction 👍 em até ${
+          MAX_AWAIT_REACTION_TIME / 60000
+        } minuto(s) para aceitar`,
+        { split: true },
       );
 
-      scoreCreateMessage.react('👍');
+      const scoreCreateMessageReact =
+        scoreCreateMessage[scoreCreateMessage.length - 1];
 
-      const filter: Discord.CollectorFilter = (
+      await scoreCreateMessageReact.react('👍');
+
+      const reactionFilter: Discord.CollectorFilter = async (
         reaction,
         user: Discord.ClientUser,
       ) => {
+        const isMod =
+          message.guild?.members.cache
+            .find(member => member.id === user.id)
+            ?.roles.cache.some(role =>
+              [moderatorRoleName].includes(role.name),
+            ) ?? false;
+
         return (
           !user.bot &&
-          user.id === approvalUserId &&
+          (approvalTeamPlayers.includes(user.id) || isMod) &&
           ['👍'].includes(reaction.emoji.name)
         );
       };
 
       try {
-        const collectedReaction = await scoreCreateMessage.awaitReactions(
-          filter,
+        const collectedReaction = await scoreCreateMessageReact.awaitReactions(
+          reactionFilter,
           {
             max: 1,
             maxEmojis: 1,
             maxUsers: 1,
-            time: 10 * 60 * 1000,
+            time: MAX_AWAIT_REACTION_TIME,
             errors: ['time'],
           },
         );
@@ -85,38 +135,103 @@ const scoreCommand: IDiscordCommand = {
         const firstReaction = collectedReaction.first();
 
         if (firstReaction?.emoji.name === '👍') {
-          const opponent = firstReaction.users.cache
-            .filter(user => !user.bot)
-            .array();
-
-          if (opponent.length) {
-            const { username: player1Username } = await client.users.fetch(
-              unfinishedMatch.player1Id,
-            );
-            const { username: player2Username } = await client.users.fetch(
-              unfinishedMatch.player2Id,
+          // const player1Dicord = await client.users.fetch(
+          //   unfinishedMatch.player1Id,
+          // );
+          const team1 = unfinishedMatch.team1Players.map(playerId => {
+            const user = message?.guild?.members.cache.find(
+              member => member.user.id === playerId,
             );
 
-            // update score
-            const updateMatchScoreService = new UpdateMatchScoreService();
+            return { playerId, playerUsername: user?.user.username ?? '' };
+          });
 
-            const updatedUnfinishedMatch = {
-              ...unfinishedMatch,
-              player1Score: player1Wins,
-              player2Score: player2Wins,
-              isFinished: true,
-              player1Username,
-              player2Username,
-            };
-
-            const updatedMatchScore = await updateMatchScoreService.execute(
-              updatedUnfinishedMatch,
+          const team2 = unfinishedMatch.team2Players.map(playerId => {
+            const user = message?.guild?.members.cache.find(
+              member => member.user.id === playerId,
             );
 
+            return { playerId, playerUsername: user?.user.username ?? '' };
+          });
+
+          // update score
+          const updateMatchScoreService = new UpdateMatchScoreService();
+
+          const finishedMatch: typeof unfinishedMatch = {
+            ...unfinishedMatch,
+            scoreReportPlayerId: message.author.id,
+            team1ScoreOrder:
+              authorTeamNumber === 1 ? authorScoreOrder : opponentScoreOrder,
+            team2ScoreOrder:
+              authorTeamNumber === 2 ? authorScoreOrder : opponentScoreOrder,
+            team1Wins: authorTeamNumber === 1 ? authorWins : opponentWins,
+            team2Wins: authorTeamNumber === 2 ? authorWins : opponentWins,
+            isFinished: true,
+          };
+
+          const updateMatchScoreData = {
+            finishedMatch,
+            team1Data: {
+              players: team1,
+              scoreOrder:
+                authorTeamNumber === 1 ? authorResultList : opponentResultList,
+            },
+            team2Data: {
+              players: team2,
+              scoreOrder:
+                authorTeamNumber === 2 ? authorResultList : opponentResultList,
+            },
+          };
+
+          const {
+            team1NewEloName,
+            team2NewEloName,
+          } = await updateMatchScoreService.execute(updateMatchScoreData);
+
+          // remove old rank roles
+
+          try {
+            // set new rank role
+            if (team1NewEloName && team2NewEloName) {
+              const team1EloRole = message?.guild?.roles.cache.find(
+                role => role.name === team1NewEloName,
+              );
+
+              const team2EloRole = message?.guild?.roles.cache.find(
+                role => role.name === team2NewEloName,
+              );
+
+              if (team1EloRole) {
+                await Promise.all(
+                  team1.map(async player => {
+                    await message.guild?.members.cache
+                      .find(member => member.id === player.playerId)
+                      ?.roles.add(team1EloRole);
+                  }),
+                );
+              }
+
+              if (team2EloRole) {
+                await Promise.all(
+                  team2.map(async player => {
+                    await message.guild?.members.cache
+                      .find(member => member.id === player.playerId)
+                      ?.roles.add(team2EloRole);
+                  }),
+                );
+              }
+            }
+          } catch (error) {
+            console.log(error);
             message.reply(
-              `Partida \`${unfinishedMatch._id}\` finalizada e pontos computados`,
+              'Erro: Os pontos da partida foram salvos porém não foi possível mudar o cargo do rank para os jogadores',
             );
+            return;
           }
+
+          message.reply(
+            `Partida \`${unfinishedMatch._id}\` finalizada e pontos computados`,
+          );
         }
       } catch (error) {
         console.log(error);
@@ -127,8 +242,9 @@ const scoreCommand: IDiscordCommand = {
       }
     } catch (error) {
       console.log(error);
+      client.logger?.log('error', 'Erro no comando score', error);
     }
   },
 };
 
-export default scoreCommand;
+export default command;

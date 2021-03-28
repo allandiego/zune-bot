@@ -1,4 +1,4 @@
-import Logger from './Logger';
+import { AppLogger } from './Log/AppLogger';
 import Elo from './Elo';
 
-export { Logger, Elo };
+export { AppLogger, Elo };

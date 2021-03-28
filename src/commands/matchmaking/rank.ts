@@ -3,40 +3,35 @@ import fs from 'fs';
 import { MessageEmbed } from 'discord.js';
 
 import FindRankingService from '@services/matchmaking/score/FindRankingService';
-import { IDiscordCommand } from '../../types';
+import { matchTypeList, matchTypeConcat } from '@config/match';
 import { appendDataToFile } from '../../util/File';
+import { IDiscordCommand } from '../../types';
 
-const GAME_CATEGORIES = `switch-singles, switch-doubles, yuzu-singles, yuzu-doubles`;
-
-const rankCommand: IDiscordCommand = {
+const command: IDiscordCommand = {
   name: 'rank',
-  description: 'Lista os 10 jogadores com maior pontuação na categoria',
+  description: 'Retorna a lista do ranking da categoria informada',
   aliases: ['ranking', 'leaderboard'],
   cooldown: 10,
   guildOnly: false,
   isArgumentsRequired: true,
-  usage: `<categoria da partida>\n${GAME_CATEGORIES}`,
+  usage: `<categoria>\n${matchTypeConcat}`,
   async execute(message, args) {
-    if (
-      !args?.length ||
-      ![
-        'switch-singles',
-        'switch-doubles',
-        'yuzu-singles',
-        'yuzu-doubles',
-      ].includes(args[0])
-    ) {
-      message.reply(`Categoria de ranking inválida:\n${GAME_CATEGORIES}`);
+    const { client } = message;
+
+    if (!args?.length || !matchTypeList.includes(args[0])) {
+      message.reply(
+        `Categoria de ranking inválida, categorias disponíveis:\n${matchTypeConcat}`,
+      );
       return;
     }
 
-    const matchCategory = args[0];
+    const matchType = args[0];
 
     try {
       const findRankingService = new FindRankingService();
       const ranking = await findRankingService.execute(
         {
-          type: matchCategory,
+          matchType,
         },
         5000,
       );
@@ -54,7 +49,7 @@ const rankCommand: IDiscordCommand = {
         '..',
         '..',
         'tmp',
-        `lista-rank-${matchCategory}-${new Date().getTime()}.txt`,
+        `lista-rank-${matchType}-${new Date().getTime()}.txt`,
       );
 
       const headerData = [
@@ -62,6 +57,7 @@ const rankCommand: IDiscordCommand = {
         { text: 'DISCORD ID', padding: 25 },
         { text: 'DISCORD USERNAME', padding: 30 },
         { text: 'ELO RATING', padding: 15 },
+        { text: 'ELO NAME', padding: 15 },
         { text: 'JOGOS', padding: 15 },
         { text: 'VITÓRIAS', padding: 15 },
         { text: 'DERROTAS', padding: 15 },
@@ -79,9 +75,11 @@ const rankCommand: IDiscordCommand = {
           25,
         )}|${player.playerUsername.padEnd(30)}|${String(
           player.eloRating,
-        ).padEnd(15)}|${String(player.gamesPlayed).padEnd(15)}|${String(
-          player.wins,
-        ).padEnd(15)}|${String(player.losses).padEnd(15)}\n`;
+        ).padEnd(15)}|${String(player.eloName).padEnd(15)}|${String(
+          player.gamesPlayed,
+        ).padEnd(15)}|${String(player.wins).padEnd(15)}|${String(
+          player.losses,
+        ).padEnd(15)}\n`;
 
         // eslint-disable-next-line no-await-in-loop
         await appendDataToFile(outputFile, line);
@@ -89,7 +87,7 @@ const rankCommand: IDiscordCommand = {
 
       const rankingMessage = new MessageEmbed()
         .setColor('#0099ff')
-        .setTitle(`Ranking ${matchCategory}`)
+        .setTitle(`Ranking ${matchType}`)
         .addFields({
           name: 'Rank',
           value: `
@@ -106,16 +104,16 @@ const rankCommand: IDiscordCommand = {
         files: [
           {
             attachment: outputFile,
-            name: `lista-rank-${matchCategory}.txt`,
+            name: `lista-rank-${matchType}.txt`,
           },
         ],
       });
 
       fs.unlinkSync(outputFile);
     } catch (error) {
-      console.log(error);
+      client.logger?.log('error', 'Erro no comando ranking', error);
     }
   },
 };
 
-export default rankCommand;
+export default command;

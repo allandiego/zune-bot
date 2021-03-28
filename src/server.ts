@@ -2,9 +2,9 @@ import '@config/env';
 import Discord from 'discord.js';
 import mongoose from 'mongoose';
 
-// import './database';
 import { IDiscordClientEnhanced } from './types';
-import { Logger } from './util';
+import { AppLogger } from './util';
+import { WinstonLogger } from './util/Log/WinstonLogger';
 import { commands } from './commands';
 import { events } from './events';
 
@@ -12,12 +12,14 @@ const client: IDiscordClientEnhanced = new Discord.Client({
   disableMentions: 'none',
 });
 
+const winstonLogger = new WinstonLogger();
+const logger = new AppLogger(winstonLogger);
 client.commands = new Discord.Collection();
 client.events = new Discord.Collection();
 client.cooldowns = new Discord.Collection();
-client.logger = Logger;
+client.logger = logger;
 
-async function initMongoDb() {
+async function initDB() {
   await mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -26,11 +28,13 @@ async function initMongoDb() {
     // enable use of Schema.index() without deprecation
     useCreateIndex: true,
   });
+
+  logger.log('info', 'DB connected!');
 }
 
 function setCommands() {
   commands.forEach(command => {
-    client.logger.load(`Command => ${command.name}`);
+    client.logger?.log('info', `Command Loaded => ${command.name}`);
 
     client.commands?.set(command.name, command);
   });
@@ -38,7 +42,7 @@ function setCommands() {
 
 function setEvents() {
   events.forEach(event => {
-    client.logger.load(`Event => ${event.name}`);
+    client.logger?.log('info', `Event Loaded => ${event.name}`);
 
     if (event.once) {
       client.once(event.name, (...args) => event.execute(client, ...args));
@@ -49,26 +53,24 @@ function setEvents() {
 }
 
 async function startUp() {
-  initMongoDb();
-  setCommands();
-  setEvents();
+  try {
+    await initDB();
+    setCommands();
+    setEvents();
 
-  // client.on('disconnect', message => {
-  //   console.log(
-  //     `${message.author.tag} in #${message.channel.name} sent: ${message.content}`,
-  //   );
-  // });
-
-  client.login(process.env.DISCORD_TOKEN);
+    client.login(process.env.DISCORD_TOKEN);
+  } catch (error) {
+    logger.log('error', 'BOT startUp Error', error);
+    client.destroy();
+  }
 }
 
 startUp();
 
 // HANDLE ERRORS
-client.on('error', error => client.logger.error(error));
-client.on('warn', info => client.logger.warn(info));
+client.on('debug', debug => logger.log('debug', debug));
+client.on('warn', warn => logger.log('warn', warn));
+client.on('error', error => logger.log('error', 'Error', error));
 
 // For any unhandled errors
-process.on('unhandledRejection', error => {
-  console.error(error);
-});
+process.on('uncaughtException', error => logger.log('error', 'Error', error));
