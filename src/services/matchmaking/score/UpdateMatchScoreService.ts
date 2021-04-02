@@ -1,7 +1,7 @@
 import { Score } from '@database/schemas';
 import { IMatch } from '@model/matchmaking/MatchModel';
+import Elo from '@util/Elo';
 import UpdateMatchService from '@services/matchmaking/match/UpdateMatchService';
-import { Elo } from '../../../util';
 
 interface ITeam {
   playerId: string;

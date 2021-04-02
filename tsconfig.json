@@ -12,11 +12,12 @@
     "baseUrl": "./src",
     "paths": {
       "@config/*": ["config/*"],
-      "@commands/*": ["commands/*"],
-      "@events/*": ["events/*"],
+      "@discord/*": ["discord/*"],
       "@services/*": ["services/*"],
+      "@providers/*": ["providers/*"],
       "@model/*": ["model/*"],
       "@database/*": ["database/*"],
+      "@util/*": ["util/*"],
     },
     "typeRoots": [
       "./src/@types",

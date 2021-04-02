@@ -1,1 +1,1 @@
-require("./dist/server.js");
+require("./dist/discord/server.js");

@@ -15,6 +15,9 @@ npm run start
 # npm run dev
 ```
 
+# DISCORD ROLES
+discored roles are hierarchical so the order matters that means a lower role cant edit a higher role
+
   ## ADD BOT TO YOUR DISCORD SERVER
     Example url to add bot to the server
 

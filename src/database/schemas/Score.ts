@@ -1,7 +1,7 @@
 import { model, Schema, Model, Document } from 'mongoose';
 
 import { MatchType } from '@model/matchmaking/MatchModel';
-import { matchTypeList } from '@config/match';
+import { matchTypeList } from '@config/matchmaking';
 
 export interface IScore extends Document {
   _id: string;
